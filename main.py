@@ -1,11 +1,15 @@
 # %% Imports
 import pandas as pd
+from imblearn.over_sampling import RandomOverSampler
+from imblearn.under_sampling import RandomUnderSampler
 from matplotlib import pyplot as plt
 from sklearn.metrics import classification_report
 import numpy as np
 from sklearn.model_selection import train_test_split
 from collections import Counter
 from sklearn import tree
+import imblearn
+print(imblearn.__version__)
 
 # %% Read the Dataset
 pth = r'data/WineQT.csv'
@@ -119,15 +123,19 @@ build_test_model(X_train, X_test, y_train, y_test)
 # 2. Oversample Y_train, X_train using SMOTE
 # we don't want to oversample the test data!
 # Increase the number of samples of the smaller class up to the size of the biggest class
-
-build_test_model(X_train, X_test, y_train, y_test)
+oversample = RandomOverSampler(sampling_strategy='minority')
+X_over, y_over = oversample.fit_resample(X, y)
+print(Counter(y_over))
+build_test_model(X_over, X_test, y_over, y_test)
 
 # 3. Undersampling Y_train, X_train using ?
 # Decrease the number of samples of the bigger class down to the size of the biggest class
-
-
-build_test_model(X_train, X_test, y_train, y_test)
+undersample = RandomUnderSampler(sampling_strategy='majority')
+X_under, y_under = undersample.fit_resample(X, y)
+print(Counter(y_under))
+build_test_model(X_under, X_test, y_under, y_test)
 
 
 # Tune decision tree?
 # Evaluate the Decision Tree
+# https://imbalanced-learn.org/stable/over_sampling.html
