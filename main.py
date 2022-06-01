@@ -115,7 +115,6 @@ def export_tree(clf):
     graph.render('test.gv', view=True)
 
 
-# class weight? what does it do?
 def build_test_model_gini(_x_train, _x_test, _y_train, _y_test):
     dt_gini = tree.DecisionTreeClassifier(criterion='gini')
     dt_gini.fit(_x_train, _y_train)
