@@ -106,7 +106,7 @@ def export_tree(clf):
     dot_data = tree.export_graphviz(clf,
                                     out_file=None,
                                     feature_names=wine_data.columns[0:-1],
-                                    class_names=["bad", "good"],
+                                    class_names=["bad", "good"], # labels correct? pls check
                                     filled=True, rounded=True,
                                     special_characters=True)
 
@@ -165,7 +165,6 @@ build_test_model_gini(X_train, X_test, y_train, y_test)
 oversample = RandomOverSampler(sampling_strategy='minority')
 X_over, y_over = oversample.fit_resample(X, y)
 print(Counter(y_over))
-#build_test_model(X_over, X_test, y_over, y_test, 9)
 build_test_model_gini(X_over, X_test, y_over, y_test)
 
 #%%
@@ -174,8 +173,7 @@ build_test_model_gini(X_over, X_test, y_over, y_test)
 undersample = RandomUnderSampler(sampling_strategy='majority')
 X_under, y_under = undersample.fit_resample(X, y)
 print(Counter(y_under))
-build_test_model(X_under, X_test, y_under, y_test,10)
-
+build_test_model_gini(X_under, X_test, y_under, y_test)
 
 
 
