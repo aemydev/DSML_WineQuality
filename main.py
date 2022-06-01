@@ -116,37 +116,6 @@ def export_tree(clf):
 
 
 # class weight? what does it do?
-def build_test_model(_x_train, _x_test, _y_train, _y_test, max_depth=3):
-    clf = tree.DecisionTreeClassifier(max_depth=max_depth)
-    clf.fit(_x_train, _y_train)
-
-    # Evaluate the model
-    y_pred = clf.predict(_x_test)
-    print(classification_report(_y_test, y_pred))
-
-    print("Test Accurracy: ", accuracy_score(_y_test, y_pred))
-    print("Train Accurracy: ", accuracy_score(_y_train, clf.predict(_x_train))) # -> 1
-
-    # roc curve
-    y_score = clf.predict_proba(_x_test)
-    fpr, tpr, thresholds = roc_curve(_y_test, y_score[:, 1])
-
-    # area under curve
-    roc_auc = auc(fpr, tpr)
-
-    # Plot metrics
-    metrics.plot_roc_curve(clf, _x_test, _y_test)
-    plt.show()
-
-
-    # plot the decision tree
-    tree.plot_tree(clf)
-    plt.show()
-
-    # export_tree(clf)
-
-
-# class weight? what does it do?
 def build_test_model_gini(_x_train, _x_test, _y_train, _y_test):
     dt_gini = tree.DecisionTreeClassifier(criterion='gini')
     dt_gini.fit(_x_train, _y_train)
