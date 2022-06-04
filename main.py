@@ -319,6 +319,7 @@ pth = r'data/WineQT.csv'
 wine_data = pd.read_csv(pth, sep=',', header=0)
 wine_data = wine_data.drop(columns=["Id"])
 X = wine_data.drop(columns=["quality"])
+y = wine_data["quality"].to_numpy()
 
 X_scaled = StandardScaler().fit_transform(X)
 
@@ -343,7 +344,7 @@ ax.set_xlabel('PC1', fontsize=12)
 ax.set_ylabel('PC2', fontsize=12)
 
 targets = wine_data["quality"].unique()
-colors = ['yellow', 'orange', 'red', 'pink', 'blue', 'violet']
+colors = ['blue', 'orange', 'red', 'pink', 'yellow', 'violet']
 
 for target, color in zip(targets, colors):
     indices_to_keep = finalDf['target'] == target
