@@ -10,9 +10,26 @@ from collections import Counter
 from sklearn import tree
 from sklearn import datasets, metrics, model_selection, svm
 import imblearn
+from sklearn.preprocessing import StandardScaler
 from sklearn.tree import export_text
 from sklearn.model_selection import GridSearchCV
 import seaborn as sns
+import pandas as pd
+from imblearn.over_sampling import RandomOverSampler
+from imblearn.under_sampling import RandomUnderSampler
+from matplotlib import pyplot as plt
+from sklearn.metrics import classification_report, accuracy_score, roc_curve, auc, confusion_matrix, make_scorer
+import numpy as np
+from sklearn.model_selection import train_test_split, ParameterGrid
+from collections import Counter
+from sklearn import tree
+from sklearn import datasets, metrics, model_selection, svm
+import imblearn
+#import graphviz
+from sklearn.tree import export_text
+from sklearn.model_selection import GridSearchCV
+import seaborn as sns
+
 
 # %% ====== Explore the Dataset ======
 # read the dataset
@@ -140,7 +157,7 @@ def build_evaluate_model(x_train, x_test, y_train, y_test, max_depth=None):
     plt.legend(loc="lower right")
     plt.show()
 
-    return clf.get_depth()
+    return clf
 
 
 #%% ====== Data Preprocessing ======
@@ -183,7 +200,7 @@ print(f"Testing target statistics: {Counter(y_test)}")
 
 #%% ====== Try different approaches to deal with not balanced dataset =====
 # 1. Nothing -> Imbalanced Dataset
-max_depth = build_evaluate_model(X_train, X_test, y_train, y_test)
+max_depth = build_evaluate_model(X_train, X_test, y_train, y_test).get_depth()
 
 # Pre-prune -> tune hyperparameter max_depth
 max_depth_grid_search = GridSearchCV(
@@ -203,7 +220,7 @@ undersample = RandomUnderSampler(sampling_strategy='majority')
 X_train, y_train = undersample.fit_resample(X_train, y_train)
 print(Counter(y_train))
 
-max_depth = build_evaluate_model(X_train, X_test, y_train, y_test)
+max_depth = build_evaluate_model(X_train, X_test, y_train, y_test).get_depth()
 
 # Pre-prune -> tune hyperparameter max_depth
 max_depth_grid_search = GridSearchCV(
@@ -223,7 +240,7 @@ oversample = RandomOverSampler(sampling_strategy='minority')
 X_train, y_train = oversample.fit_resample(X_train, y_train)
 print(Counter(y_train))
 
-max_depth = build_evaluate_model(X_train, X_test, y_train, y_test)
+max_depth = build_evaluate_model(X_train, X_test, y_train, y_test).get_depth()
 
 # Pre-prune -> tune hyperparameter max_depth
 max_depth_grid_search = GridSearchCV(
@@ -240,8 +257,9 @@ build_evaluate_model(X_train, X_test, y_train, y_test, max_depth_grid_search.bes
 
 #%% Post-Pruning
 # Post pruning
+full_tree = build_evaluate_model(X_train, X_test, y_train, y_test)
 ccp_alphas = full_tree.cost_complexity_pruning_path(X_train, y_train)["ccp_alphas"]
-ccp_alphas, impurities = path.ccp_alphas, path.impurities
+#ccp_alphas, impurities = path.ccp_alphas, path.impurities
 print(ccp_alphas)
 
 clfs = []
@@ -278,7 +296,6 @@ plt.legend()
 plt.title("Accuaracy vs. alpha")
 plt.show()
 
-#%%
 clf_ = tree.DecisionTreeClassifier(random_state=42, ccp_alpha=0.010)
 clf_.fit(X_train, y_train)
 y_train_pred = clf_.predict(X_train)
@@ -294,6 +311,49 @@ plot_confusion_matrix(pd.DataFrame(metrics.confusion_matrix(y_test, y_test_pred)
 # We get many false positives and false negatives when making predictions on the training set
 # Maybe splitting up the features 5 - 6 was not a good idea, since 5 and 6 are more similar than for e.g. 3 and 5
 # PCA to prove this point:
+
+#%%
+from sklearn.decomposition import PCA
+
+pth = r'data/WineQT.csv'
+wine_data = pd.read_csv(pth, sep=',', header=0)
+wine_data = wine_data.drop(columns=["Id"])
+X = wine_data.drop(columns=["quality"])
+
+X_scaled = StandardScaler().fit_transform(X)
+
+pca = PCA(n_components=2)
+principalComponents = pca.fit_transform(X_scaled)
+principalDf = pd.DataFrame(data=principalComponents, columns=['PC1', 'PC2'])
+
+print(pca.explained_variance_ratio_)
+scree_plot = pd.DataFrame(pca.explained_variance_ratio_).plot(kind="bar")
+plt.show()
+
+information_kept = sum(pca.explained_variance_ratio_)
+print(information_kept.round(3))
+
+# Add Targets back to Df
+finalDf = pd.concat([principalDf, pd.DataFrame(y, columns=['target'])], axis=1)
+
+# STEP 3 // plot in 2d
+fig = plt.figure(figsize=(8, 8))
+ax = fig.add_subplot(1, 1, 1)
+ax.set_xlabel('PC1', fontsize=12)
+ax.set_ylabel('PC2', fontsize=12)
+
+targets = wine_data["quality"].unique()
+colors = ['yellow', 'orange', 'red', 'pink', 'blue', 'violet']
+
+for target, color in zip(targets, colors):
+    indices_to_keep = finalDf['target'] == target
+    ax.scatter(finalDf.loc[indices_to_keep, 'PC1'],
+               finalDf.loc[indices_to_keep, 'PC2'],
+               c=color,
+               s=50)
+
+ax.legend(targets)
+plt.show()
 
 
 
