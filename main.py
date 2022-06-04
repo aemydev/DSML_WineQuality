@@ -11,6 +11,8 @@ from sklearn import tree
 from sklearn import datasets, metrics, model_selection, svm
 import imblearn
 import graphviz
+from sklearn.tree import export_text
+from sklearn.model_selection import GridSearchCV
 
 print(imblearn.__version__)
 
@@ -67,41 +69,8 @@ plt.show()
 # %% Approach 1: Binary Classification (Ines)
 # https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
 
-# Read the dataset
-pth = r'data/WineQT.csv'
-wine_data = pd.read_csv(pth, sep=',', header=0)
-print(wine_data.head())
-print(wine_data.tail())
 
-# Drop Id column -> not needed
-wine_data = wine_data.drop(columns=["Id"])
-
-# Show that dataset is not balanced
-wine_data['quality'].value_counts().plot.bar(rot=0)
-plt.show()
-
-print(df['quality'].value_counts())
-
-# Balance dataset
-wine_data["quality"] = wine_data["quality"].where(wine_data["quality"] > 5, 0)  # <= 5 -> 0 -> bad_wine (3, 4, 5)
-wine_data["quality"] = wine_data["quality"].where(wine_data["quality"] < 6, 1)  # >=6 -> 1 -> good_wine (6, 7, 8)
-print(wine_data.head())
-print(wine_data.tail())
-
-# Plot again
-wine_data['quality'].value_counts().plot.bar(rot=0)
-plt.show()
-
-# Train test split
-y = wine_data["quality"]
-X = wine_data.drop(columns=["quality"])
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=100)
-
-print(f"Training target statistics: {Counter(y_train)}")
-print(f"Testing target statistics: {Counter(y_test)}")
-
-
+# export dt as pdf
 def export_tree(clf):
     dot_data = tree.export_graphviz(clf,
                                     out_file=None,
@@ -111,30 +80,74 @@ def export_tree(clf):
                                     special_characters=True)
 
     graph = graphviz.Source(dot_data)
-    print(graph)
+    #print(graph)
     graph.render('test.gv', view=True)
 
 
-def build_test_model_gini(_x_train, _x_test, _y_train, _y_test):
-    dt_gini = tree.DecisionTreeClassifier(criterion='gini')
-    dt_gini.fit(_x_train, _y_train)
+# train and evaluate the model
+def build_test_model(x_train, x_test, y_train, _y_test, max_depth, min_samples_split):
+    clf = tree.DecisionTreeClassifier(criterion='gini', max_depth=max_depth, min_samples_split=min_samples_split, random_state=42)
+    clf.fit(x_train, y_train)
 
-    # Evaluate the model
-    y_pred = dt_gini.predict(_x_test)
+    # plot the tree
+    plt.figure(figsize=(30,10), facecolor='white')
+    a = tree.plot_tree(clf,
+                       feature_names=feature_names,
+                       class_names=labels,
+                       rounded=True,
+                       filled=True,
+                       fontsize=14)
+    plt.show()
 
-    # Confusion Matrix
-    cm = confusion_matrix(_y_test, y_pred)
-    print(cm)
+    # tree as text
+    tree_rules = export_text(clf,
+                             feature_names=list(feature_names))
+    print(tree_rules)
 
-    # Classification Report
-    print(classification_report(_y_test, y_pred))
+    # make prediction
+    y_pred = clf.predict(x_test)
+
+    # confusion matrix
+    import seaborn as sns
+    confusion_matrix = pd.DataFrame(metrics.confusion_matrix(y_test, y_pred))
+
+    ax = plt.axes()
+    sns.set(font_scale=1.3)
+    plt.figure(figsize=(10,7))
+    sns.heatmap(confusion_matrix, annot=True, fmt="g", ax=ax, cmap="magma")
+
+    ax.set_title('Confusion Matrix - Decision Tree')
+    ax.set_xlabel("Predicted label", fontsize=15)
+    ax.set_xticklabels(list(labels))
+    ax.set_ylabel("True label", fontsize=15)
+    ax.set_yticklabels(list(labels), rotation=0)
+
+    plt.show()
+
+    # performance metrics
+    print("Accuracy: ", metrics.accuracy_score(y_test, y_pred))
+    print(metrics.classification_report(y_test, y_pred))
+
+    # precision:
+    # recall:
+    # f1-score:
+    # support:
+
+    # roc curve (plot)
+
+
+    # feature importance
+    importance = pd.DataFrame({'feature': X_train.columns,
+                              'importance': np.round(clf.feature_importances_, 3)})
+    importance.sort_values('importance', ascending=False, inplace=True)
+    print(importance)
 
     # roc curve
-    y_score = dt_gini.predict_proba(_x_test)
+    y_score = clf.predict_proba(x_test)
     fpr, tpr, thresholds = roc_curve(_y_test, y_score[:, 1])
     roc_auc = auc(fpr, tpr)
 
-    # plot roc
+    ## plot roc
     plt.figure()
     plt.plot(fpr, tpr, color='darkorange', lw=1, label='ROC curve (area = %0.2f)' % roc_auc)
     plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
@@ -146,42 +159,93 @@ def build_test_model_gini(_x_train, _x_test, _y_train, _y_test):
     plt.legend(loc="lower right")
     plt.show()
 
-    # plot and export the decision tree
-    tree.plot_tree(dt_gini)
-    plt.show()
-    export_tree(dt_gini)
+
+# find the best parameters
+def improve_model(x_train, y_train):
+    tuned_parameters = [{'max_depth': [1, 2, 3, 4, 5, 6, 7, 8],
+                         'min_samples_split': [2, 4, 6, 8, 10, 12, 14, 16]}]
+    scores = ['recall']
+
+    for score in scores:
+        print()
+        print(f"Tuning hyperparameters for {score}")
+        print()
+        clf = GridSearchCV(
+            tree.DecisionTreeClassifier(random_state=42), tuned_parameters, scoring=f'{score}_macro'
+        )
+        clf.fit(x_train, y_train)
+
+        print("Best parameters set found on dev set:")
+        print()
+        print(clf.best_params_)
+        print()
+        print("Grid  scores on dev set:")
+        means = clf.cv_results_["mean_test_score"]
+        stds = clf.cv_results_["std_test_score"]
+        for mean, std, params in zip(means, stds, clf.cv_results_['params']):
+            print(f"{mean:0.3f} (+/- {std*2:0.03f}) for {params}")
 
 
+#%% ====== Data Preprocessing ======
+# (Re)import the dataset
+pth = r'data/WineQT.csv'
+wine_data = pd.read_csv(pth, sep=',', header=0)
+# print(wine_data.head())
+# print(wine_data.tail())
 
-#%%
-# ======== Test the model ========
+# drop "Id" column -> not needed
+wine_data = wine_data.drop(columns=["Id"])
+
+# show that dataset is not balanced
+wine_data['quality'].value_counts().plot.bar(rot=0)
+plt.show()
+print(wine_data['quality'].value_counts())
+
+# balance dataset -> split into "good" and "bad" wine
+wine_data["quality"] = wine_data["quality"].where(wine_data["quality"] > 5, 0)  # <= 5 -> 0 -> bad_wine (3, 4, 5)
+wine_data["quality"] = wine_data["quality"].where(wine_data["quality"] < 6, 1)  # >=6 -> 1 -> good_wine (6, 7, 8)
+# print(wine_data.head())
+# print(wine_data.tail())
+
+# plot again
+wine_data['quality'].value_counts().plot.bar(rot=0)
+plt.show()
+
+# train test split
+y = wine_data["quality"]
+X = wine_data.drop(columns=["quality"])
+feature_names = X.columns
+# labels = y.unique()
+# labels = labels.astype(str)
+labels = ["bad", "good"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+print(f"Training target statistics: {Counter(y_train)}")
+print(f"Testing target statistics: {Counter(y_test)}")
+
+#%% ====== Try different approaches to deal with not balanced dataset =====
 # 1. Nothing -> Imbalanced Dataset
-build_test_model_gini(X_train, X_test, y_train, y_test)
+improve_model(X_train, y_train)
+# -> {'max_depth': 5, 'min_samples_split': 2}
+build_test_model(X_train, X_test, y_train, y_test, 5, 2)
 
 #%%
-# 2. Oversample Y_train, X_train using SMOTE
+# 2. Oversample Y_train, X_train
 # we don't want to oversample the test data!
 # Increase the number of samples of the smaller class up to the size of the biggest class
 oversample = RandomOverSampler(sampling_strategy='minority')
-X_over, y_over = oversample.fit_resample(X, y)
+X_over, y_over = oversample.fit_resample(X_train, y_train)
 print(Counter(y_over))
-build_test_model_gini(X_over, X_test, y_over, y_test)
+improve_model(X_over, y_over)
+build_test_model(X_over, X_test, y_over, y_test, 8, 2)
 
 #%%
 # 3. Undersampling Y_train, X_train using ?
 # Decrease the number of samples of the bigger class down to the size of the biggest class
 undersample = RandomUnderSampler(sampling_strategy='majority')
-X_under, y_under = undersample.fit_resample(X, y)
+X_under, y_under = undersample.fit_resample(X_train, y_train)
 print(Counter(y_under))
-build_test_model_gini(X_under, X_test, y_under, y_test)
-
-
-
-# Prune the tree?
-# Evaluate the Decision Tree (PCA, ROC, AUC?)
-# https://imbalanced-learn.org/stable/over_sampling.html
-
-# Does tree overfit?
-
-
-# Gini as criterion
+improve_model(X_over, y_over)
+# -> {'max_depth': 4, 'min_samples_split': 2}
+build_test_model(X_under, X_test, y_under, y_test, 4, 2)
