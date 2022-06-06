@@ -211,6 +211,8 @@ max_depth_grid_search = GridSearchCV(
 
 max_depth_grid_search.fit(X_train, y_train)
 print(max_depth_grid_search.best_params_['max_depth'])
+#%%
+print(max_depth)
 
 build_evaluate_model(X_train, X_test, y_train, y_test, max_depth_grid_search.best_params_['max_depth'])
 
@@ -225,7 +227,7 @@ max_depth = build_evaluate_model(X_train, X_test, y_train, y_test).get_depth()
 # Pre-prune -> tune hyperparameter max_depth
 max_depth_grid_search = GridSearchCV(
         estimator=tree.DecisionTreeClassifier(random_state=42),
-        scoring='f1',
+        scoring='roc_auc',
         param_grid=ParameterGrid(
             {"max_depth": [[max_depth_] for max_depth_ in range(1, max_depth+1)]}))
 
@@ -242,10 +244,11 @@ print(Counter(y_train))
 
 max_depth = build_evaluate_model(X_train, X_test, y_train, y_test).get_depth()
 
+
 # Pre-prune -> tune hyperparameter max_depth
 max_depth_grid_search = GridSearchCV(
         estimator=tree.DecisionTreeClassifier(random_state=42),
-        scoring='f1', # other score?
+        scoring='roc_auc', # other score?
         param_grid=ParameterGrid(
             {"max_depth": [[max_depth_] for max_depth_ in range(1, max_depth+1)]}))
 
