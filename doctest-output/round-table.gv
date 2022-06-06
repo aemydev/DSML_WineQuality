@@ -1,0 +1,33 @@
+digraph Tree {
+node [shape=box, style="filled, rounded", color="black", fontname="helvetica"] ;
+edge [fontname="helvetica"] ;
+0 [label=<alcohol &le; 10.25<br/>gini = 0.5<br/>samples = 1044<br/>value = [522, 522]<br/>class = bad>, fillcolor="#ffffff"] ;
+1 [label=<sulphates &le; 0.555<br/>gini = 0.428<br/>samples = 565<br/>value = [390, 175]<br/>class = bad>, fillcolor="#f1ba92"] ;
+0 -> 1 [labeldistance=2.5, labelangle=45, headlabel="True"] ;
+2 [label=<chlorides &le; 0.069<br/>gini = 0.24<br/>samples = 201<br/>value = [173, 28]<br/>class = bad>, fillcolor="#e99559"] ;
+1 -> 2 ;
+3 [label=<gini = 0.454<br/>samples = 23<br/>value = [15, 8]<br/>class = bad>, fillcolor="#f3c4a3"] ;
+2 -> 3 ;
+4 [label=<gini = 0.199<br/>samples = 178<br/>value = [158, 20]<br/>class = bad>, fillcolor="#e89152"] ;
+2 -> 4 ;
+5 [label=<total sulfur dioxide &le; 65.5<br/>gini = 0.482<br/>samples = 364<br/>value = [217, 147]<br/>class = bad>, fillcolor="#f7d6bf"] ;
+1 -> 5 ;
+6 [label=<gini = 0.5<br/>samples = 257<br/>value = [130, 127]<br/>class = bad>, fillcolor="#fefcfa"] ;
+5 -> 6 ;
+7 [label=<gini = 0.304<br/>samples = 107<br/>value = [87, 20]<br/>class = bad>, fillcolor="#eb9e67"] ;
+5 -> 7 ;
+8 [label=<sulphates &le; 0.585<br/>gini = 0.399<br/>samples = 479<br/>value = [132, 347]<br/>class = good>, fillcolor="#84c2ef"] ;
+0 -> 8 [labeldistance=2.5, labelangle=-45, headlabel="False"] ;
+9 [label=<alcohol &le; 11.45<br/>gini = 0.5<br/>samples = 135<br/>value = [67, 68]<br/>class = good>, fillcolor="#fcfeff"] ;
+8 -> 9 ;
+10 [label=<gini = 0.454<br/>samples = 86<br/>value = [56, 30]<br/>class = bad>, fillcolor="#f3c4a3"] ;
+9 -> 10 ;
+11 [label=<gini = 0.348<br/>samples = 49<br/>value = [11, 38]<br/>class = good>, fillcolor="#72b9ed"] ;
+9 -> 11 ;
+12 [label=<alcohol &le; 11.25<br/>gini = 0.307<br/>samples = 344<br/>value = [65, 279]<br/>class = good>, fillcolor="#67b4eb"] ;
+8 -> 12 ;
+13 [label=<gini = 0.412<br/>samples = 186<br/>value = [54, 132]<br/>class = good>, fillcolor="#8ac5f0"] ;
+12 -> 13 ;
+14 [label=<gini = 0.13<br/>samples = 158<br/>value = [11, 147]<br/>class = good>, fillcolor="#48a4e7"] ;
+12 -> 14 ;
+}
